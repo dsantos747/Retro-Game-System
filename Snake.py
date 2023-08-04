@@ -91,7 +91,7 @@ def main():
         snake_Length = 1
 
         snake_speed=15
-        snake_speed_step=1
+        snake_speed_step=0.5
 
         snake_Length_past=0
 
