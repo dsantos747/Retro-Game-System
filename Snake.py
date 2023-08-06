@@ -103,16 +103,17 @@ def main():
         while not game_over: #Continue running until game over triggered
             while game_close == True:
                 dis.fill(black)
-                message("Jeez, you suck! Press Q-Quit or C-Play Again", red)
+                message("Jeez, you suck! Press Esc to Quit or Space to Play Again", red)
                 player_score(current_score)
                 pygame.display.update()
 
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN:
-                        if event.key == pygame.K_q:
+                        if event.key == pygame.K_ESCAPE:
                             game_over=True
-                            game_close=False
-                        if event.key == pygame.K_c:
+                            pygame.quit()
+                            quit()
+                        if event.key == pygame.K_SPACE:
                             snake_speed=20
                             gameLoop()
 
@@ -159,8 +160,6 @@ def main():
             snake_List.append(snake_Head)
             if abs((len(snake_List) - snake_Length)) >= 2:
                 del snake_List[:shortener_length]
-                #snake_List[:-shortener_length] = []
-                #snake_List[:len(snake_List)-shortener_length] = []
             elif len(snake_List) > snake_Length: 
                 del snake_List[0]               
 

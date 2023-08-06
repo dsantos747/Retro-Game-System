@@ -91,8 +91,11 @@ def launch_snake():
 def launch_space():
     print('Game not yet ready')
 
-snake_button = Button(30, 30, 300, 50, 'Slippery Snek', launch_snake)
-space_button = Button(30, 100, 300, 50, 'Space Invaders', launch_space)
+button_width=200
+button_height=40
+
+snake_button = Button((dis_width/2)-(button_width/2), 100, button_width, button_height, 'Slippery Snek', launch_snake)
+space_button = Button((dis_width/2)-(button_width/2), 150, button_width, button_height, 'Space Invaders', launch_space)
 
 
 def menuLoop():
