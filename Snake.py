@@ -1,27 +1,31 @@
 # A simple snake game in Python
 
 ##### TASKS #####
-# Add initial menu with difficulty settings
+# Add difficulty level - controlled by main menu choice
 # Add music
-# Add hi-score logging
-#   Maybe use parent script, where you select your game, to allow user login. Then, all hi-scores obtained during that session will be recorded under that name.
+# Add snake colour swatches (four) - controlled by main menu choice
 # Add map options
 #   Add maps with obstacles
-def main():
+
+def main(username,difficulty):
     import pygame
     import time
     import random
+    import psycopg2
+
+    conn = psycopg2.connect(database="users",
+                        host="localhost",
+                        user="postgres",
+                        password="passW0rd",
+                        port="5432")
+
+    cursor = conn.cursor()
+    cursor.execute(f"SELECT hiscore_snake FROM users WHERE username='{username}'")
+    player_hiscore=cursor.fetchone()[0]
+    print(player_hiscore)
 
     pygame.init()
 
-    # Colours
-    # white = (255, 255, 255)
-    # yellow = (255, 255, 102)
-    # black = (0, 0, 0)
-    # red = (255, 0, 0)
-    # green = (0, 255, 0)
-    # blue = (0, 0, 255)
-    # darkGreen = (5, 149, 37)
     white = '#ffffff'
     yellow = '#ffff00'
     black = '#000000'
@@ -36,10 +40,6 @@ def main():
     dis=pygame.display.set_mode((dis_width,dis_height))
     pygame.display.set_caption("Slippery Snek")
     pygame.display.update()
-    game_over=False
-
-    x1_change=0
-    y1_change=0
 
     clock = pygame.time.Clock()
 
@@ -47,32 +47,48 @@ def main():
     shortener_length=3
 
     colour_array=[yellow,black,red,green,blue,darkGreen]
-    food_message=["Ohh yeahh","So good!","Mmmmm","Give me more!","Gotta keep munchin'","Scrumptious"]
+    food_message=["Ohh yeahh","So good!","Mmmmm","Give me more!","Gotta keep munchin'","Scrumptious","Nom nom nom","Quite delectable actually","A little savoury...","*chef's kiss*"]
 
-    font_style = pygame.font.SysFont("bahnschrift",15)
+    main_font = pygame.font.SysFont("bahnschrift",15)
     score_font = pygame.font.SysFont("roboto",20)
 
-    def player_score(score):
+    class SQL_update(): # Use this class for updating a user value - e.g. high scores.
+        def __init__(self, table='', column='', value='', refcolumn='', refvalue=''):
+            self.table=str(table)
+            self.column=str(column)
+            self.value=str(value)
+            self.refcolumn=str(refcolumn)
+            self.refvalue=str(refvalue)
+
+            # Build Query and commit into PostgreSQL db
+            query = f"UPDATE {self.table} SET {self.column}='{self.value}' WHERE ({self.refcolumn}='{self.refvalue}')"
+            cursor.execute(query)
+            conn.commit()
+
+    def player_score(score,player_hiscore):
         value=score_font.render("Current score: " + str(score), True, black)
-        dis.blit(value,[0,0])
+        hiscore=score_font.render(str(username) + "'s hi-score: " + str(player_hiscore), True, black)
+        hiscore_pos=score_font.size(str(username) + "'s hi-score: " + str(player_hiscore))
+        dis.blit(value,[5,5])
+        dis.blit(hiscore,[(dis_width-hiscore_pos[0]-5),5])
 
     def our_snake(snake_block_size, snake_list):
         for x in snake_list:
             pygame.draw.rect(dis,darkGreen,[x[0],x[1],snake_block_size,snake_block_size])
 
-    def message(msg,colour):
-        mesg_pos=font_style.size(msg)
-        mesg = font_style.render(msg, True, colour)
+    def message(msg,colour): # Consider amending this function to take an input for the position of the message. Currently it is fixed in the middle
+        mesg_pos=main_font.size(msg)
+        mesg = main_font.render(msg, True, colour)
         dis.blit(mesg, [(dis_width/2)-(mesg_pos[0]/2), (dis_height/2)-(mesg_pos[1]/2)])
 
     def popup_msg(txt_choice,colour_choice,food_x0,food_y0):
         txt=txt_choice
         colour=colour_choice
-        mesg_pos=font_style.size(txt)
-        mesg = font_style.render(txt, True, colour)
+        mesg_pos=main_font.size(txt)
+        mesg = main_font.render(txt, True, colour)
         dis.blit(mesg, [(food_x0)-(mesg_pos[0]/2)+snake_block_size/2, (food_y0)-(mesg_pos[1]/2)+snake_block_size/2])
 
-    def gameLoop(): #Function to run the game
+    def gameLoop(player_hiscore,difficulty): #Function to run the game
         game_over=False
         game_close=False
         current_score = -1
@@ -90,8 +106,8 @@ def main():
         snake_List = []
         snake_Length = 1
 
-        snake_speed=15
-        snake_speed_step=0.5
+        snake_speed=15*difficulty
+        snake_speed_step=0.5*difficulty
 
         snake_Length_past=0
 
@@ -104,8 +120,13 @@ def main():
             while game_close == True:
                 dis.fill(black)
                 message("Jeez, you suck! Press Esc to Quit or Space to Play Again", red)
-                player_score(current_score)
+                message(f"Your score: {current_score}", green)
                 pygame.display.update()
+                if current_score > player_hiscore:
+                    print('New Hi Score!')
+                    player_hiscore = current_score
+                    SQL_update('users','hiscore_snake',f"{player_hiscore}",'username',username)
+                # Here, should run a PSQL query to commit the new hi score to the database, if it exceeds the existing hi score
 
                 for event in pygame.event.get():
                     if event.type == pygame.KEYDOWN:
@@ -115,7 +136,7 @@ def main():
                             quit()
                         if event.key == pygame.K_SPACE:
                             snake_speed=20
-                            gameLoop()
+                            gameLoop(player_hiscore,difficulty)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -150,7 +171,7 @@ def main():
             if (snake_Length != snake_Length_past):
                 shortener_x=round(random.randrange(0,dis_width-snake_block_size)/10)*10
                 shortener_y=round(random.randrange(0,dis_height-snake_block_size)/10)*10
-            if ((snake_Length) >= 7) and ((snake_Length) % shortener_length)==0:
+            if ((snake_Length) >= 7) and ((snake_Length) % (shortener_length+2))==0:
                 pygame.draw.rect(dis,blue,[shortener_x,shortener_y,snake_block_size,snake_block_size])
             snake_Length_past = snake_Length
 
@@ -169,19 +190,19 @@ def main():
                     game_close = True
 
             our_snake(snake_block_size,snake_List)
-            player_score(current_score)
+            player_score(current_score,player_hiscore)
 
             pygame.display.update()
 
             t=time.time()
 
             if x1 == food_x and y1 == food_y:
-                #popup_msg()
-                #print(random.choice(food_message))
                 food_x0=food_x
                 food_y0=food_y
                 food_x=round(random.randrange(0,dis_width-snake_block_size)/10)*10
                 food_y=round(random.randrange(0,dis_height-snake_block_size)/10)*10
+                shortener_x=-snake_block_size
+                shortener_y=-snake_block_size
                 snake_Length += 1
                 snake_speed += snake_speed_step #ADD SPEED INCREASE
                 txt_choice=random.choice(food_message)
@@ -202,7 +223,7 @@ def main():
         pygame.quit()
         quit()
     
-    gameLoop()
+    gameLoop(player_hiscore,difficulty)
 
 if __name__ == "__main__":
-    main()
+    pass

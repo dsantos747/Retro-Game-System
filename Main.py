@@ -2,20 +2,26 @@
 
 # Add "logout" button for username
 # Add link to SQL table for username logging
+# Add difficulty button
 
 import pygame
 import Snake
+import psycopg2
+
+conn = psycopg2.connect(database="users",
+                        host="localhost",
+                        user="postgres",
+                        password="passW0rd",
+                        port="5432")
+
+cursor = conn.cursor()
+
+# cursor.execute("SELECT * FROM users")
+# print("User list is" + str(cursor.fetchall()))
 
 pygame.init()
 
 # Colours
-# white = (255, 255, 255)
-# yellow = (255, 255, 102)
-# black = (0, 0, 0)
-# red = (255, 0, 0)
-# green = (0, 255, 0)
-# blue = (0, 0, 255)
-# darkGreen = (5, 149, 37)
 white = '#ffffff'
 yellow = '#ffff00'
 black = '#000000'
@@ -26,12 +32,13 @@ darkGreen = '#007010'
 lightGrey = '#f9f9f9'
 medLightGrey = '#bbbbbb'
 meddarkGrey = '#707070'
+darkGrey = '#333333'
 
 dis_width=400
 dis_height=300
 
 dis=pygame.display.set_mode((dis_width,dis_height))
-pygame.display.set_caption("Danny's Game Portal")
+pygame.display.set_caption("Retro Game Portal")
 pygame.display.update()
 
 fps = 60
@@ -41,6 +48,45 @@ menu_font = pygame.font.SysFont('bahnschrift', 18)
 form_font = pygame.font.SysFont('Arial', 15)
 
 objects = []
+
+class SQL_select(): #
+    def __init__(self, table='', column='', refcolumn='',refvalue=''):
+        self.table=str(table)
+        self.columns=str(column)
+        self.refcolumn=str(refcolumn)
+        self.refvalue=str(refvalue)
+
+        self.query = f"SELECT {self.columns} FROM {self.table} WHERE {self.refcolumn}='{self.refvalue}'"
+           
+    def execute(self):
+        # Build Query and commit into PostgreSQL db
+        cursor.execute(self.query)
+        result = cursor.fetchall()
+        return result
+
+class SQL_insert(): #
+    def __init__(self, table='', columns=[], values=''):
+        self.table=str(table)
+        self.columns=str(columns).replace("[","(").replace("]",")").replace("'","")
+        self.values=str(values)
+
+        # Build Query and commit into PostgreSQL db
+        query = f"INSERT INTO {self.table}{self.columns} VALUES{self.values}"
+        cursor.execute(query)
+        conn.commit()
+
+class SQL_update(): # Use this class for updating a user value - e.g. high scores.
+    def __init__(self, table='', column='', value='', refcolumn='', refvalue=''):
+        self.table=str(table)
+        self.column=str(column)
+        self.value=str(value)
+        self.refcolumn=str(refcolumn)
+        self.refvalue=str(refvalue)
+
+        # Build Query and commit into PostgreSQL db
+        query = f"UPDATE {self.table} SET {self.column}='{self.value}' WHERE ({self.refcolumn}='{self.refvalue}')"
+        cursor.execute(query)
+        conn.commit()
 
 class Button():
     def __init__(self, x, y, width, height, buttonText='Button', onclickFunction=None, onePress=False):
@@ -53,9 +99,9 @@ class Button():
         self.alreadyPressed = False
 
         self.fillColors = {
-            'normal': '#ffffff',
-            'hover': '#666666',
-            'pressed': '#333333',
+            'normal': white,
+            'hover': meddarkGrey,
+            'pressed': darkGrey,
         }
 
         self.buttonSurface = pygame.Surface((self.width, self.height))
@@ -96,11 +142,13 @@ class formBox():
 
     def __init__(self, x, y, w, h, text=''):
         self.rect = pygame.Rect(x, y, w, h)
-        self.colour = meddarkGrey
+        self.colour = medLightGrey
         self.textcolour = black
         self.text = text
         self.txt_surface = form_font.render(text, True, self.colour)
         self.active = False
+        self.submit_value = False
+        self.output = ''
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -112,17 +160,37 @@ class formBox():
             else:
                 self.active = False
             # Change the current color of the input box.
-            self.colour = medLightGrey if self.active else meddarkGrey
+            self.colour = meddarkGrey if self.active else medLightGrey
         if event.type == pygame.KEYDOWN:
             if self.active:
                 if event.key == pygame.K_RETURN:
-                    print(self.text)
-                    # HERE NEED TO ADD FUNCTIONALITY TO LINK TO SQL
-                    self.text = 'Logged in as ' + self.text
+                    self.output = self.text
+
+                    # Check if username exists yet, add if not, and assign value to username value
+                    user_check=SQL_select('users','username','username',f"{self.output}").execute()
+                    if len(user_check) > 1:
+                        print(f"Database error - contact system administrator")
+                    elif len(user_check) == 0:
+                        SQL_insert('users',f"[username]",f"('{self.output}')")
+                        print(f"New user added")
+                        self.text = 'Logged in as ' + self.output
+                        return self.output
+                        #username = self.output
+                    elif len(user_check) == 1:
+                        print(f"Existing user found")
+                        # username = self.output
+                        self.text = 'Logged in as ' + self.output
+                        return self.output                        
+
+                    self.textcolour = meddarkGrey
+                    self.colour = medLightGrey
+                    self.active = False
+
                 elif event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
                 else:
                     self.text += event.unicode
+                
                 # Re-render the text.
                 self.txt_surface = form_font.render(self.text, True, self.textcolour)
 
@@ -137,25 +205,29 @@ class formBox():
         # Blit the rect.
         pygame.draw.rect(screen, self.colour, self.rect, 2)
 
-def launch_snake():
-    Snake.main()
+# def launch_snake(username,difficulty):
+#     Snake.main(username,difficulty)
 
-def launch_space():
-    print('Game not yet ready')
+# def launch_space(username):
+#     print(f"Game not yet ready. Have patience please - I'm learning!")
 
 button_width=200
 button_height=40
 field_width=200
 field_height=30
 
-snake_button = Button((dis_width/2)-(button_width/2), 100, button_width, button_height, 'Slippery Snek', launch_snake)
-space_button = Button((dis_width/2)-(button_width/2), 150, button_width, button_height, 'Space Invaders', launch_space)
+difficulty=1
+
+snake_button = Button((dis_width/2)-(button_width/2), 100, button_width, button_height, 'Slippery Snek', lambda: Snake.main(username,difficulty))
+space_button = Button((dis_width/2)-(button_width/2), 150, button_width, button_height, 'Space Invaders', lambda: print(f"Game not yet ready. Have patience please - I'm learning!"))
 
 username_field = formBox((dis_width/2)-(field_width/2),250, field_width, field_height, 'Enter Username for Hi-Scores')
+username=""
 
 form_boxes = [username_field]
 
 def menuLoop():
+    global username
     menu_close=False
 
     while not menu_close:
@@ -165,14 +237,14 @@ def menuLoop():
             if event.type == pygame.QUIT:
                 menu_close=True
             for box in form_boxes:
-                box.handle_event(event)
+                output=box.handle_event(event)
+                if output != None:
+                    username = output
+                    print(username)
         
-        for box in form_boxes:
-            box.update()
-           # box.draw(dis)
-
         dis.fill(white)
         for box in form_boxes:
+            box.update()
             box.draw(dis)
 
         for object in objects:
