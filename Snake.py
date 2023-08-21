@@ -6,6 +6,7 @@
 # Add snake colour swatches (four) - controlled by main menu choice
 # Add map options
 #   Add maps with obstacles
+# Expand upon, and vertically distribute, endgame messages
 
 def main(username,difficulty):
     import pygame
@@ -22,7 +23,6 @@ def main(username,difficulty):
     cursor = conn.cursor()
     cursor.execute(f"SELECT hiscore_snake FROM users WHERE username='{username}'")
     player_hiscore=cursor.fetchone()[0]
-    print(player_hiscore)
 
     pygame.init()
 
@@ -38,7 +38,7 @@ def main(username,difficulty):
     dis_height=300
 
     dis=pygame.display.set_mode((dis_width,dis_height))
-    pygame.display.set_caption("Slippery Snek")
+    pygame.display.set_caption("Retro-Play: Slippery Snek")
     pygame.display.update()
 
     clock = pygame.time.Clock()
@@ -76,10 +76,10 @@ def main(username,difficulty):
         for x in snake_list:
             pygame.draw.rect(dis,darkGreen,[x[0],x[1],snake_block_size,snake_block_size])
 
-    def message(msg,colour): # Consider amending this function to take an input for the position of the message. Currently it is fixed in the middle
+    def message(msg,colour,x,y): # Consider amending this function to take an input for the position of the message. Currently it is fixed in the middle
         mesg_pos=main_font.size(msg)
         mesg = main_font.render(msg, True, colour)
-        dis.blit(mesg, [(dis_width/2)-(mesg_pos[0]/2), (dis_height/2)-(mesg_pos[1]/2)])
+        dis.blit(mesg, [x-(mesg_pos[0]/2), y-(mesg_pos[1]/2)])
 
     def popup_msg(txt_choice,colour_choice,food_x0,food_y0):
         txt=txt_choice
@@ -119,8 +119,8 @@ def main(username,difficulty):
         while not game_over: #Continue running until game over triggered
             while game_close == True:
                 dis.fill(black)
-                message("Jeez, you suck! Press Esc to Quit or Space to Play Again", red)
-                message(f"Your score: {current_score}", green)
+                message("Jeez, you suck! Press Esc to Quit or Space to Play Again", red,(dis_width/2),(dis_height/2)-20)
+                message(f"Your score: {current_score}", green,(dis_width/2),(dis_height/2)+20)
                 pygame.display.update()
                 if current_score > player_hiscore:
                     print('New Hi Score!')

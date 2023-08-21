@@ -3,6 +3,8 @@
 # Add "logout" button for username
 # Add link to SQL table for username logging
 # Add difficulty button
+# Add retro helicopter option
+
 
 import pygame
 import Snake
@@ -31,21 +33,24 @@ blue = '#0000ff'
 darkGreen = '#007010'
 lightGrey = '#f9f9f9'
 medLightGrey = '#bbbbbb'
-meddarkGrey = '#707070'
+medDarkGrey = '#707070'
 darkGrey = '#333333'
 
-dis_width=400
-dis_height=300
+dis_width=600
+dis_height=450
 
 dis=pygame.display.set_mode((dis_width,dis_height))
-pygame.display.set_caption("Retro Game Portal")
+pygame.display.set_caption("Retro-Play")
 pygame.display.update()
 
 fps = 60
 clock = pygame.time.Clock()
 
-menu_font = pygame.font.SysFont('bahnschrift', 18)
+menu_font = pygame.font.SysFont('Consolas', 18)
 form_font = pygame.font.SysFont('Arial', 15)
+
+back_img = pygame.image.load("back_main.png")  # Replace with your image file's path
+back_img = pygame.transform.scale(back_img, (dis_width, dis_height))  # Scale image to fit the screen
 
 objects = []
 
@@ -99,15 +104,15 @@ class Button():
         self.alreadyPressed = False
 
         self.fillColors = {
-            'normal': white,
-            'hover': meddarkGrey,
-            'pressed': darkGrey,
+            'normal': black,
+            'hover': darkGrey,
+            'pressed': medDarkGrey,
         }
 
         self.buttonSurface = pygame.Surface((self.width, self.height))
         self.buttonRect = pygame.Rect(self.x, self.y, self.width, self.height)
 
-        self.buttonSurf = menu_font.render(buttonText, True, (20, 20, 20))
+        self.buttonSurf = menu_font.render(buttonText, True, medLightGrey)
 
         objects.append(self)
     
@@ -142,13 +147,13 @@ class formBox():
 
     def __init__(self, x, y, w, h, text=''):
         self.rect = pygame.Rect(x, y, w, h)
-        self.colour = medLightGrey
-        self.textcolour = black
-        self.text = text
+        self.colour = lightGrey
+        self.textcolour = white
+        self.text = text    
         self.txt_surface = form_font.render(text, True, self.colour)
         self.active = False
         self.submit_value = False
-        self.output = ''
+        #self.output = ''
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -160,7 +165,7 @@ class formBox():
             else:
                 self.active = False
             # Change the current color of the input box.
-            self.colour = meddarkGrey if self.active else medLightGrey
+            self.colour = medDarkGrey if self.active else medLightGrey
         if event.type == pygame.KEYDOWN:
             if self.active:
                 if event.key == pygame.K_RETURN:
@@ -174,15 +179,15 @@ class formBox():
                         SQL_insert('users',f"[username]",f"('{self.output}')")
                         print(f"New user added")
                         self.text = 'Logged in as ' + self.output
+                        self.txt_surface = form_font.render(self.text, True, self.textcolour)
                         return self.output
-                        #username = self.output
                     elif len(user_check) == 1:
                         print(f"Existing user found")
-                        # username = self.output
                         self.text = 'Logged in as ' + self.output
+                        self.txt_surface = form_font.render(self.text, True, self.textcolour)
                         return self.output                        
 
-                    self.textcolour = meddarkGrey
+                    self.textcolour = medLightGrey
                     self.colour = medLightGrey
                     self.active = False
 
@@ -205,23 +210,18 @@ class formBox():
         # Blit the rect.
         pygame.draw.rect(screen, self.colour, self.rect, 2)
 
-# def launch_snake(username,difficulty):
-#     Snake.main(username,difficulty)
-
-# def launch_space(username):
-#     print(f"Game not yet ready. Have patience please - I'm learning!")
-
-button_width=200
-button_height=40
+button_width=180
+button_height=30
 field_width=200
 field_height=30
 
 difficulty=1
 
-snake_button = Button((dis_width/2)-(button_width/2), 100, button_width, button_height, 'Slippery Snek', lambda: Snake.main(username,difficulty))
-space_button = Button((dis_width/2)-(button_width/2), 150, button_width, button_height, 'Space Invaders', lambda: print(f"Game not yet ready. Have patience please - I'm learning!"))
+snake_button = Button((dis_width/2)-(button_width/2), 250, button_width, button_height, 'Slippery Snek', lambda: Snake.main(username,difficulty))
+space_button = Button((dis_width/2)-(button_width/2), 300, button_width, button_height, 'Space Invaders', lambda: print(f"Game not yet ready. Have patience please - I'm learning!"))
+heli_button = Button((dis_width/2)-(button_width/2), 350, button_width, button_height, 'Retro Helicopter', lambda: print(f"Game not yet ready. Have patience please - I'm learning!"))
 
-username_field = formBox((dis_width/2)-(field_width/2),250, field_width, field_height, 'Enter Username for Hi-Scores')
+username_field = formBox((dis_width/2)-(field_width/2),140, field_width, field_height, 'Enter Username for Hi-Scores')
 username=""
 
 form_boxes = [username_field]
@@ -231,7 +231,7 @@ def menuLoop():
     menu_close=False
 
     while not menu_close:
-        dis.fill(white)
+        dis.blit(back_img,(0,0))
         
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -242,7 +242,6 @@ def menuLoop():
                     username = output
                     print(username)
         
-        dis.fill(white)
         for box in form_boxes:
             box.update()
             box.draw(dis)
@@ -250,7 +249,7 @@ def menuLoop():
         for object in objects:
             object.process()
 
-        pygame.display.flip()
+        pygame.display.flip()   
         clock.tick(fps)
 
     pygame.quit()
