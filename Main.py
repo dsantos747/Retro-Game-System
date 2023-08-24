@@ -49,8 +49,8 @@ clock = pygame.time.Clock()
 menu_font = pygame.font.SysFont('Consolas', 18)
 form_font = pygame.font.SysFont('Arial', 15)
 
-back_img = pygame.image.load("back_main.png")  # Replace with your image file's path
-back_img = pygame.transform.scale(back_img, (dis_width, dis_height))  # Scale image to fit the screen
+back_img = pygame.image.load("back_main.png")
+back_img = pygame.transform.scale(back_img, (dis_width, dis_height))
 
 objects = []
 

@@ -52,6 +52,9 @@ def main(username,difficulty):
     main_font = pygame.font.SysFont("bahnschrift",15)
     score_font = pygame.font.SysFont("roboto",20)
 
+    back_img = pygame.image.load("back_snake.png")
+    back_img = pygame.transform.scale(back_img, (dis_width, dis_height))
+
     class SQL_update(): # Use this class for updating a user value - e.g. high scores.
         def __init__(self, table='', column='', value='', refcolumn='', refvalue=''):
             self.table=str(table)
@@ -76,7 +79,7 @@ def main(username,difficulty):
         for x in snake_list:
             pygame.draw.rect(dis,darkGreen,[x[0],x[1],snake_block_size,snake_block_size])
 
-    def message(msg,colour,x,y): # Consider amending this function to take an input for the position of the message. Currently it is fixed in the middle
+    def message(msg,colour,x,y):
         mesg_pos=main_font.size(msg)
         mesg = main_font.render(msg, True, colour)
         dis.blit(mesg, [x-(mesg_pos[0]/2), y-(mesg_pos[1]/2)])
@@ -160,7 +163,7 @@ def main(username,difficulty):
 
             x1 += x1_change
             y1 += y1_change
-            dis.fill(white)
+            dis.blit(back_img,(0,0))
             pygame.draw.rect(dis,green,[food_x,food_y,snake_block_size,snake_block_size])
 
             # Score counter
